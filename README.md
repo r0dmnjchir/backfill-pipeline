@@ -54,6 +54,20 @@ python -m backfill_pipeline reset --db ledger.db --job orders_daily --state fail
 Exit codes: `0` all planned chunks are `done` (or already were), `1` at least
 one chunk failed, `2` bad arguments or a plan that exceeds `--max-chunks`.
 
+### Workers
+
+`--workers N` loads up to N partitions concurrently. Each worker opens its own
+ledger connection and claims before loading, so the ledger stays authoritative;
+the loser of a claim moves on instead of double-loading. Keep N at or below the
+warehouse's per-job concurrency budget. The loader must be safe for different
+partitions at once, which the contract already requires.
+
+```bash
+python -m backfill_pipeline run --db ledger.db --job orders_daily \
+  --start 2026-03-01 --end 2026-03-31 --workers 4 \
+  --loader examples.rewrite_orders:load
+```
+
 ### Loader contract
 
 A loader receives one partition label (`YYYY-MM-DD`) and must be idempotent for
