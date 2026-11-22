@@ -66,12 +66,22 @@ def run(
     granularity_days: int = 1,
     max_chunks: int = 512,
     lease_seconds: int = 1800,
+    workers: int = 1,
 ) -> Result:
     """Plan `start..end` and load it. Dates are inclusive `YYYY-MM-DD`."""
+    if workers < 1:
+        raise ValueError(f"workers must be >= 1, got {workers}")
     chunks = plan(
         parse_date(start),
         parse_date(end),
         granularity_days=granularity_days,
         max_chunks=max_chunks,
     )
-    return run_chunks(job, loader, chunks, ledger, lease_seconds=lease_seconds)
+    if workers == 1:
+        return run_chunks(job, loader, chunks, ledger, lease_seconds=lease_seconds)
+    from .concurrency import run_parallel
+
+    return run_parallel(
+        job, loader, chunks, ledger.path,
+        workers=workers, lease_seconds=lease_seconds,
+    )

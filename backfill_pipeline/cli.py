@@ -45,6 +45,8 @@ def build_parser() -> argparse.ArgumentParser:
         if name == "run":
             target.add_argument("--loader", required=True, help="module:function")
             target.add_argument("--lease-seconds", type=int, default=1800)
+            target.add_argument("--workers", type=int, default=1,
+                                help="concurrent chunk loaders (one ledger connection each)")
 
     status = sub.add_parser("status")
     common(status)
@@ -79,7 +81,8 @@ def main(argv: list[str] | None = None) -> int:
                 result = run(args.job, loader, args.start, args.end, ledger,
                              granularity_days=args.granularity_days,
                              max_chunks=args.max_chunks,
-                             lease_seconds=args.lease_seconds)
+                             lease_seconds=args.lease_seconds,
+                             workers=args.workers)
             except ValueError as exc:
                 print(f"error: {exc}", file=sys.stderr)
                 return 2
